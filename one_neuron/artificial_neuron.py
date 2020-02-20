@@ -38,9 +38,11 @@ class Neuron:
     def _logistic_gradient(self, A):
         dAdZ = A * (1-A)
         return dAdZ
+    
     def _forward(self):
         self.Z = np.matmul(self.W, self.X_batch) + self.B
         self.A=self._logistic(self.Z)
+    
     def _backward(self):
         m = self.X.shape[1]
         self.dAdZ=self._logistic_gradient(self.A)
