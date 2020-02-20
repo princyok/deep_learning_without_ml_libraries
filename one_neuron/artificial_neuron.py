@@ -18,10 +18,10 @@ class Neuron:
         self.X_batch=None
         self.Y_batch=None
         
-        self.A=None
+        self.a=None
         self.Z=None
-        self.W=None
-        self.B=None
+        self.w=None
+        self.b=None
         
         self.cost=None
         
@@ -40,13 +40,13 @@ class Neuron:
         return dAdZ
     
     def _forward(self):
-        self.Z = np.matmul(self.W, self.X_batch) + self.B
-        self.A=self._logistic(self.Z)
+        self.Z = np.matmul(self.w, self.X_batch) + self.b
+        self.a=self._logistic(self.Z)
     
     def _backward(self):
         m = self.X.shape[1]
-        self.dAdZ=self._logistic_gradient(self.A)
-        self.dJdA = - ((self.Y_batch / self.A) - ((1 - self.Y_batch) / (1 - self.A)))
+        self.dAdZ=self._logistic_gradient(self.a)
+        self.dJdA = - ((self.Y_batch / self.a) - ((1 - self.Y_batch) / (1 - self.a)))
         
         self.dJdZ = self.dAdZ * self.dJdA
         
@@ -54,17 +54,17 @@ class Neuron:
         self.dJdB= np.sum(self.dJdZ, axis=1)
         
     def _update_parameters_via_gradient_descent (self, learning_rate):
-        self.W = self.W - learning_rate * self.dJdW
-        self.B = self.B - learning_rate * self.dJdB
+        self.w = self.w - learning_rate * self.dJdW
+        self.b = self.b - learning_rate * self.dJdB
         
     def _initialize_parameters(self, random_seed=11):
         prng=np.random.RandomState(seed=random_seed)
         n=self.X.shape[0]
-        self.W=prng.random(size=(1, n))
-        self.B=prng.random(size=(1, 1))
+        self.w=prng.random(size=(1, n))
+        self.b=prng.random(size=(1, 1))
         
     def _compute_accuracy(self):
-        Y_pred=np.where(self.A>0.5, 1, 0)
+        Y_pred=np.where(self.a>0.5, 1, 0)
         Y_true=self.Y_batch
         
         accuracy=np.average(np.where(Y_true==Y_pred, 1, 0))
@@ -73,7 +73,7 @@ class Neuron:
     
     def _compute_precision(self):
         Y_true=self.Y_batch
-        Y_pred=np.where(self.A>0.5, 1, 0)
+        Y_pred=np.where(self.a>0.5, 1, 0)
         
         pred_positives_mask = (Y_pred==1)
         precision=np.average(np.where(Y_pred[pred_positives_mask]==Y_true[pred_positives_mask]))        

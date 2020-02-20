@@ -18,3 +18,4 @@ print(neuron.evaluate(X=x_train, Y=y_train))
 print(neuron.evaluate(X=x_test, Y=y_test))
 
 #%%
+print(neuron.B)
