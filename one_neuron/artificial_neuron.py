@@ -3,6 +3,8 @@
 
 """
 import numpy as np
+np.seterr(over="warn", under="warn") # warn for overflows and underflows.
+
 class Neuron:
     """
     Artificial nueron for machine learning.
@@ -32,11 +34,11 @@ class Neuron:
         self.dJdB=None
         
     def _logistic(self, Z):
-        A = 1/(1+np.exp(-Z))
-        return A
+        a = 1/(1+np.exp(-Z))
+        return a
     
-    def _logistic_gradient(self, A):
-        dAdZ = A * (1-A)
+    def _logistic_gradient(self, a):
+        dAdZ = a * (1-a)
         return dAdZ
     
     def _forward(self):
@@ -60,10 +62,15 @@ class Neuron:
     def _initialize_parameters(self, random_seed=11):
         prng=np.random.RandomState(seed=random_seed)
         n=self.X.shape[0]
-        self.w=prng.random(size=(1, n))
-        self.b=prng.random(size=(1, 1))
+        self.w=prng.random(size=(1, n))*0.01
+        self.b=np.zeros(shape=(1, 1))
         
     def _compute_accuracy(self):
+        
+        if np.isnan(self.a).all():
+            print("Caution: All the activations are null values.")
+            return None
+
         Y_pred=np.where(self.a>0.5, 1, 0)
         Y_true=self.Y_batch
         
@@ -72,6 +79,11 @@ class Neuron:
         return accuracy
     
     def _compute_precision(self):
+        
+        if np.isnan(self.a).all():
+            print("Caution: All the activations are null values.")
+            return None
+        
         Y_true=self.Y_batch
         Y_pred=np.where(self.a>0.5, 1, 0)
         
@@ -80,11 +92,12 @@ class Neuron:
         
         return precision
     
-    def train(self,num_iterations, learning_rate, batch_size):
+    def train(self,num_iterations, learning_rate, batch_size, random_seed=11):
         print("Training begins...")
-        self._initialize_parameters()
+        self._initialize_parameters(random_seed=random_seed)
+        prng=np.random.RandomState(seed=random_seed)
         for i in range(0, num_iterations):
-            random_indices = np.random.choice(self.Y.shape[1], (batch_size,), replace=False)
+            random_indices = prng.choice(self.Y.shape[1], (batch_size,), replace=False)
             self.Y_batch = self.Y[:,random_indices]
             self.X_batch = self.X[:,random_indices]
             

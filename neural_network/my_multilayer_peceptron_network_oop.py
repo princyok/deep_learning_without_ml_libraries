@@ -478,7 +478,6 @@ class Network:
         return score
     
     def _compute_accuracy(self):
-        # TODO: is this reshape necessary?        
         Y_true=self.Y_batch.reshape(-1,)
         Y_pred=self.Y_pred.reshape(-1,)
         
@@ -488,7 +487,6 @@ class Network:
         return None
     
     def _compute_precision(self):
-        # TODO: is this reshape necessary?        
         Y_true=self.Y_batch.reshape(-1,)
         Y_pred=self.Y_pred.reshape(-1,)
         
@@ -693,11 +691,11 @@ class TrainingArchiver:
 
         Parameters
         ----------
-        kwargs** : TYPE Boolean, bit, etc.
+        kwargs** : TYPE Boolean, bit (e.g. 0 or 1), etc. Any value that resolves to Boolean.
             Valid arguments are: "activation", "preactivation", "cost", "gradient", 
                     "parameters", "accuracy", and "precision".
-            Any value that resolves to Boolean. True means summary of the archiving 
-            will be printed to console, and False means silent archiving.
+            True means summary of the archiving will be printed to console, and
+            False means silent archiving.
         Returns
         -------
         None.
