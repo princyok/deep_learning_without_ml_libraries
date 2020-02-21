@@ -808,22 +808,22 @@ class TrainingArchiver:
         if self.archiving_verbosities[archival_target]:
             
             if archival_target=="accuracy" and prefix=="validation":
-                print(prefix+" "+archival_target+", pass "+str(i)+": ",
+                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
                       helper_funcs.sigfig(self.all_validation_accuracies[i]))
             elif archival_target=="accuracy" and prefix=="training":
-                print(prefix+" "+archival_target+", pass "+str(i)+": ",
+                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
                       helper_funcs.sigfig(self.all_training_accuracies[i]))                
             
             if archival_target=="cost" and prefix=="validation":
-                print(prefix+" "+archival_target+", pass "+str(i)+": ",
+                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
                       helper_funcs.sigfig(self.all_validation_costs[i]))
             elif archival_target=="cost" and prefix=="training":
-                print(prefix+" "+archival_target+", pass "+str(i)+": ",
+                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
                       helper_funcs.sigfig(self.all_training_costs[i]))
 
             if archival_target=="precision" and prefix=="validation":
-                print(prefix+" "+archival_target+", pass "+str(i)+": ",
+                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
                       helper_funcs.sigfig(self.all_validation_precisions[i]))
             elif archival_target=="precision" and prefix=="training":
-                print(prefix+" "+archival_target+", pass "+str(i)+": ",
+                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
                       helper_funcs.sigfig(self.all_training_precisions[i]))                
