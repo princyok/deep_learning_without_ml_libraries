@@ -175,7 +175,7 @@ class Network:
         
         self.Y_pred=None # latest Y_pred computed for the latest forward propagation.
         
-        self.num_latest_iteration=None
+        self.num_latest_iteration=0
         
         self.training_archiver=None
         
@@ -410,9 +410,15 @@ class Network:
         return None
     
     def train(self, num_iterations=10, batch_size=10, learning_rate=0.0000009, print_costs=True):
+        
         print("Training Begins...")
         
-        for self.num_latest_iteration in range(1, num_iterations+1):
+
+        num_iterations=num_iterations+self.num_latest_iteration
+        
+        for self.num_latest_iteration in range(self.num_latest_iteration+1, num_iterations+1):
+            # loop header: allows training to be resumable for the network from the state it was in 
+            #  at end of its last training.
                 
             # select batch from the training dataset.
             
