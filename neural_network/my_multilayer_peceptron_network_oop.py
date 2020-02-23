@@ -14,7 +14,7 @@ import copy
 import helper_funcs
 np.seterr(over="warn", under="warn") # warn for overflows and underflows.
 
-class Layer:
+class Layer: # public.
     """
     Standard feedforward neural network (a.k.a. multilayer pecetron).
     
@@ -41,7 +41,7 @@ class Layer:
         if activation_name == None:
             self.activation_type=None            
         else:
-            self.activation_type=ActivationFunction(name=activation_name)
+            self.activation_type=_ActivationFunction(name=activation_name)
             
         self.num_units=num_units
         self.W=None
@@ -52,8 +52,18 @@ class Layer:
         self.parent_network=None
         self.position_in_network=None
         self.preceding_layer=None
+
+    def _layer_forward_prop(self): # module-private.
+        """
+        Performs the forward propagation for a layer.
+        """        
+        self.__compute_linear_preactivation()
         
-    def incorporate_into_network(self, parent_network):
+        self.A=self.activation_type._forward_pass(self.Z)
+        
+        return None 
+        
+    def _incorporate_into_network(self, parent_network): # module-private.
             
         self.parent_network=parent_network
 
@@ -61,29 +71,8 @@ class Layer:
         self.position_in_network=self.parent_network.num_layers
         
         self.preceding_layer=self.parent_network.layers[self.position_in_network - 1]
-            
-    def compute_linear_preactivation(self): 
-        """
-        Computes the preactivation for a layer's forward propagation.
         
-        """
-        A_prior = self.preceding_layer.A
-
-        self.Z = np.matmul(self.W, A_prior) + self.B
-                    
-        return None
-
-    def layer_forward_prop(self):
-        """
-        Performs the forward propagation for a layer.
-        """        
-        self.compute_linear_preactivation()
-        
-        self.A=self.activation_type.forward_pass(self.Z)
-        
-        return None 
-
-    def compute_cost_gradients(self):
+    def _compute_cost_gradients(self): # class-private.
         """
         Computes dJ/dW and dJ/dB of the layer and dJ/dA of the preceding layer.
         """
@@ -105,22 +94,33 @@ class Layer:
         
         return None
     
-    def layer_back_prop(self):
+    def _layer_back_prop(self): # module-private.
         """
         Peforms backward propagation for a layer.
         """
         Z = self.Z
         A = self.A
         
-        self.gradients["dAdZ"]=self.activation_type.backward_pass(A, Z)
+        self.gradients["dAdZ"]=self.activation_type._backward_pass(A, Z)
 
         self.gradients["dJdZ"] = self.gradients["dAdZ"] * self.gradients["dJdA"]
         
-        self.compute_cost_gradients()
+        self._compute_cost_gradients()
         
         return None
+                
+    def _compute_linear_preactivation(self): # class-private.
+        """
+        Computes the preactivation for a layer's forward propagation.
+        
+        """
+        A_prior = self.preceding_layer.A
 
-class InputLayer(Layer):
+        self.Z = np.matmul(self.W, A_prior) + self.B
+                    
+        return None
+
+class _InputLayer(Layer): # module-private.
 
     def __init__(self, X, parent_network):
         
@@ -129,7 +129,7 @@ class InputLayer(Layer):
         self.position_in_network=0
         self.parent_network=parent_network
 
-class Network:
+class Network: # public.
     """
     Standard feedforward neural network (a.k.a. multilayer pecetron).
     
@@ -141,7 +141,7 @@ class Network:
     Y : TYPE numpy array. Must have the shape 1 x m, 
         where m is number of records.
     
-    input_layer: TYPE InputLayer (parent: Layer).
+    input_layer: TYPE _InputLayer (parent: Layer).
         
     
     training_archiver: TYPE TrainingArchiver.
@@ -156,7 +156,7 @@ class Network:
         self.Y=Y
         self.X=X
         
-        self.input_layer=InputLayer(X=self.X, parent_network=self)
+        self.input_layer=_InputLayer(X=self.X, parent_network=self)
         
         self.cost=None
         self.layers=dict()
@@ -179,22 +179,7 @@ class Network:
         
         self.training_archiver=None
         
-    def add_training_archiver(self, training_archiver):
-        self.training_archiver=training_archiver
-        training_archiver.set_target_network(self)
-        
-    def _update_num_layers(self):
-        self.num_layers=len(self.layers) - 1
-        
-    def _update_Y_pred(self):
-        L=self.num_layers
-        self.Y_pred=np.where(self.layers[L].A>0.5, 1,0)
-    
-    def _add_input_layer(self):
-        self.layers[0]=self.input_layer
-        self._update_num_layers()
-    
-    def add_layers(self, layers):
+    def add_layers(self, layers): # public.
         """
         Adds one or more layers to the network.
 
@@ -214,30 +199,15 @@ class Network:
             # if a collection of layer(s).
             for layer in layers:
                 self._add_layer(layer)
-    
-    def _add_layer(self, layer):
-        """
-        Adds one layer to the network. 
-        Updates parent_network and position_in_network of the layer.
+            
+            
+    def add_training_archiver(self, training_archiver): # public.
+        self.training_archiver=training_archiver
+        training_archiver._set_target_network(self)
         
-        PARAMETERS
-        ----------
-        layer: TYPE Layer. 
-            The layer to be added.
-        
-        RETURNS
-        -------
-        None.
-
-        """     
-        if layer.parent_network==None:
-            self.layers[self.num_layers+1]=layer
-            self._update_num_layers()
-            layer.incorporate_into_network(parent_network=self)
-        else:
-            raise ValueError("The layer has already been added to a network.")
     
-    def initialize_parameters(self, weight_init_scheme="xavier", bias_init_scheme="zeros", factor=0.01,random_seed=3):
+    def initialize_parameters(self, weight_init_scheme="xavier", bias_init_scheme="zeros", 
+                              factor=0.01,random_seed=3): # public.
         """
         
         Randomly initializes the weights according to the specified schemes, and the biases to zero. 
@@ -297,8 +267,120 @@ class Network:
             elif bias_init_scheme=="ones":
                 self.layers[l].B = np.ones((self.layers[l].num_units, 1)) * factor 
         return None
+
+    def train(self, num_iterations=10, batch_size=10, learning_rate=0.0000009, print_costs=True): # public.
+        
+        print("Training Begins...")
+        
+
+        num_iterations=num_iterations+self.num_latest_iteration
+        
+        for self.num_latest_iteration in range(self.num_latest_iteration+1, num_iterations+1):
+            # loop header: allows training to be resumable for the network from the state it was in 
+            #  at end of its last training.
+                
+            # select batch from the training dataset.
+            
+            random_indices = np.random.choice(self.Y.shape[1], (batch_size,), replace=False)
+            
+            self.Y_batch=self.Y[:,random_indices]
+            self.input_layer.A = self.X[:,random_indices]
+                  
+            # Forward propagation.
+            self._network_forward_prop()
+        
+            # Back propagation.
+            self._network_back_prop()
+         
+            # Update parameters.
+            self._update_parameters_gradient_descent(learning_rate=learning_rate)
+            
+            # Compute the training cost, accuracy and precision (using the current training batch).
+            
+            self.training_archiver._compute_and_archive_cost(cost_type="training")
+            self.training_archiver._compute_and_archive_accuracy(acc_type="training")
+            self.training_archiver._compute_and_archive_precision(precis_type="training")
+            
+            # Compute the validation cost, accuracy and precision (using the entire training dataset).
+            
+            self.input_layer.A = self.X   
+            self.Y_batch=self.Y
+            
+            self._network_forward_prop()
+            self.training_archiver._compute_and_archive_cost(cost_type="validation")
+            self.training_archiver._compute_and_archive_accuracy(acc_type="validation")
+            self.training_archiver._compute_and_archive_precision(precis_type="validation")
+            
+            # rest of caching occurs here.
+            
+            self.training_archiver._archive_gradients()
+            self.training_archiver._archive_parameters()
+            
+        print("Training Complete!")
+            
+    def evaluate(self, X, Y, metric="accuracy"): # public.
+        # assumes binary classification.
+        
+        _available_perfomance_metrics=["accuracy","precision"]
+        
+        metric=metric.lower()
+        
+        if not any(m == metric.lower() for m in _available_perfomance_metrics):
+            raise ValueError
+                
+        self.input_layer.A = X
+        self.Y_batch=Y
+        
+        self._network_forward_prop()
+                
+        if metric=="accuracy":
+            self._compute_accuracy()
+            score=self.latest_accuracy
+        if metric =="precision":
+            self._compute_precision()
+            score=self.latest_precision
+            
+        return score
+        
     
-    def network_forward_prop(self):
+    def _update_num_layers(self): # class-private.
+        self.num_layers=len(self.layers) - 1
+        
+        
+    def _update_Y_pred(self): # class-private.
+        L=self.num_layers
+        self.Y_pred=np.where(self.layers[L].A>0.5, 1,0)
+    
+    
+    def _add_input_layer(self): # class-private.
+        self.layers[0]=self.input_layer
+        self._update_num_layers()
+    
+    
+    def _add_layer(self, layer): # class-private.
+        """
+        Adds one layer to the network. 
+        Updates parent_network and position_in_network of the layer.
+        
+        PARAMETERS
+        ----------
+        layer: TYPE Layer. 
+            The layer to be added.
+        
+        RETURNS
+        -------
+        None.
+
+        """     
+        if layer.parent_network==None:
+            self.layers[self.num_layers+1]=layer
+            self._update_num_layers()
+            layer._incorporate_into_network(parent_network=self)
+        else:
+            raise ValueError("The layer has already been added to a network.")
+
+    
+    def _network_forward_prop(self): # class-private.
         """
         Performs forward propagation for the network.        
 
@@ -311,16 +393,17 @@ class Network:
     
         for l in range(1, L):
         # looping through all L-1 hidden layers.
-            self.layers[l].layer_forward_prop()            
+            self.layers[l]._layer_forward_prop()            
                     
         else: # last layer.
-            self.layers[L].layer_forward_prop()
+            self.layers[L]._layer_forward_prop()
             
         self._update_Y_pred()
         
         return None
     
-    def compute_cost(self):
+    
+    def _compute_cost(self): # module-private.
         """
         Computes cost using the cross-entropy cost function and assumes binary classification.
     
@@ -340,8 +423,9 @@ class Network:
         self.cost = np.squeeze(self.cost) # ensures cost is a scalar (this turns [[10]] or [10] into 10).
             
         return None
+    
 
-    def compute_last_layer_dJdA(self):
+    def _compute_last_layer_dJdA(self): # class-private.
         """
         Compute dJ/dA for the last layer. This assumes a cross-entropy cost function.
         """
@@ -352,7 +436,8 @@ class Network:
                                     ((1 - self.Y_batch) / (1 - A_last)))
         return None
 
-    def network_back_prop(self):
+
+    def _network_back_prop(self): # class-private.
         """
         Performs backward propagation for the network.
         
@@ -364,11 +449,11 @@ class Network:
         L = self.num_layers
         
         # Initialize the backpropagation by computing dJ/dA of the last layer (Lth layer).
-        self.compute_last_layer_dJdA()
+        self._compute_last_layer_dJdA()
             
         # Compute the Lth layer gradients.
         last_layer = self.layers[L]
-        last_layer.layer_back_prop()
+        last_layer._layer_back_prop()
         
         # ensure dJdB is a 2D numpy array and not 1D, even though it stored as a vector, 
         # and only broadcasted into a matrix during computations.
@@ -378,7 +463,7 @@ class Network:
         for l in reversed(range(1, L)):
             current_layer = self.layers[l]
             
-            current_layer.layer_back_prop()
+            current_layer._layer_back_prop()
                     
             # ensure dJdB is a 2D numpy array and not 1D.
             current_layer.gradients["dJdB"] = current_layer.gradients["dJdB"].reshape(-1,1)  
@@ -386,7 +471,7 @@ class Network:
         return None
     
     
-    def update_parameters_gradient_descent(self, learning_rate):
+    def _update_parameters_gradient_descent(self, learning_rate): # class-private.
         """
         Update parameters of the network using standard gradient descent.        
 
@@ -409,81 +494,8 @@ class Network:
         
         return None
     
-    def train(self, num_iterations=10, batch_size=10, learning_rate=0.0000009, print_costs=True):
-        
-        print("Training Begins...")
-        
-
-        num_iterations=num_iterations+self.num_latest_iteration
-        
-        for self.num_latest_iteration in range(self.num_latest_iteration+1, num_iterations+1):
-            # loop header: allows training to be resumable for the network from the state it was in 
-            #  at end of its last training.
-                
-            # select batch from the training dataset.
-            
-            random_indices = np.random.choice(self.Y.shape[1], (batch_size,), replace=False)
-            
-            self.Y_batch=self.Y[:,random_indices]
-            self.input_layer.A = self.X[:,random_indices]
-                  
-            # Forward propagation.
-            self.network_forward_prop()
-        
-            # Back propagation.
-            self.network_back_prop()
-         
-            # Update parameters.
-            self.update_parameters_gradient_descent(learning_rate=learning_rate)
-            
-            # Compute the training cost, accuracy and precision (using the current training batch).
-            
-            self.training_archiver.compute_and_archive_cost(cost_type="training")
-            self.training_archiver.compute_and_archive_accuracy(acc_type="training")
-            self.training_archiver.compute_and_archive_precision(precis_type="training")
-            
-            # Compute the validation cost, accuracy and precision (using the entire training dataset).
-            
-            self.input_layer.A = self.X   
-            self.Y_batch=self.Y
-            
-            self.network_forward_prop()
-            self.training_archiver.compute_and_archive_cost(cost_type="validation")
-            self.training_archiver.compute_and_archive_accuracy(acc_type="validation")
-            self.training_archiver.compute_and_archive_precision(precis_type="validation")
-            
-            # rest of caching occurs here.
-            
-            self.training_archiver.archive_gradients()
-            self.training_archiver.archive_parameters()
-            
-        print("Training Complete!")
-            
-    def evaluate(self, X, Y, metric="accuracy"):
-        # assumes binary classification.
-        
-        _available_perfomance_metrics=["accuracy","precision"]
-        
-        metric=metric.lower()
-        
-        if not any(m == metric.lower() for m in _available_perfomance_metrics):
-            raise ValueError
-                
-        self.input_layer.A = X
-        self.Y_batch=Y
-        
-        self.network_forward_prop()
-                
-        if metric=="accuracy":
-            self._compute_accuracy()
-            score=self.latest_accuracy
-        if metric =="precision":
-            self._compute_precision()
-            score=self.latest_precision
-            
-        return score
     
-    def _compute_accuracy(self):
+    def _compute_accuracy(self): # module-private.
         Y_true=self.Y_batch.reshape(-1,)
         Y_pred=self.Y_pred.reshape(-1,)
         
@@ -492,7 +504,8 @@ class Network:
         
         return None
     
-    def _compute_precision(self):
+    
+    def _compute_precision(self): # module-private.
         Y_true=self.Y_batch.reshape(-1,)
         Y_pred=self.Y_pred.reshape(-1,)
         
@@ -502,7 +515,7 @@ class Network:
         
         return None
     
-class ActivationFunction:
+class _ActivationFunction: # module-private.
     
     _available_activation_funcs=["logistic","relu","tanh"]
     
@@ -512,7 +525,7 @@ class ActivationFunction:
         else:
             raise ValueError
         
-    def forward_pass(self, Z):
+    def _forward_pass(self, Z): # module-private.
         if self.name=="logistic":
             A = self._logistic(Z)
         if self.name=="relu":
@@ -521,7 +534,7 @@ class ActivationFunction:
             A = self._tanh(Z) 
         return A
     
-    def backward_pass(self, A,Z):
+    def _backward_pass(self, A,Z): # module-private.
         if self.name=="logistic":
             dAdZ=self._logistic_gradient(A)
         if self.name=="relu":
@@ -530,7 +543,7 @@ class ActivationFunction:
             dAdZ=self._tanh_gradient(Z)          
         return dAdZ
     
-    def _logistic(self, Z):
+    def _logistic(self, Z): # class-private.
         """
         The logistic activation function that maps preactivation to activation.
         
@@ -550,7 +563,7 @@ class ActivationFunction:
     
         return A
 
-    def _relu(self, Z):
+    def _relu(self, Z): # class-private.
         """
         The rectified linear activation function that maps preactivation to activation.
     
@@ -569,7 +582,7 @@ class ActivationFunction:
         return A
     
     
-    def _tanh(self, Z):
+    def _tanh(self, Z): # class-private.
         """
         The hyperbolic tangent activation function that maps preactivation to activation.
     
@@ -586,7 +599,7 @@ class ActivationFunction:
         A=(np.exp(Z)-np.exp(-Z))/(np.exp(Z)+np.exp(-Z))
         return A
     
-    def _relu_gradient(self, Z):
+    def _relu_gradient(self, Z): # class-private.
         """
         Computes the gradient of a RELU unit w.r.t. the preactivation, for back propagation.
 
@@ -609,7 +622,7 @@ class ActivationFunction:
         dAdZ=result
         return dAdZ
     
-    def _logistic_gradient(self, A):
+    def _logistic_gradient(self, A): # class-private.
         """
         Computes the gradient for a logistic unit w.r.t. the preactivation, for back propagation.
         
@@ -627,7 +640,7 @@ class ActivationFunction:
     
         return dAdZ
     
-    def _tanh_gradient(self, A):
+    def _tanh_gradient(self, A): # class-private.
         """
         Computes the gradient for a hyperbolic tangent unit w.r.t. the preactivation, for back propagation.        
         
@@ -681,7 +694,7 @@ class TrainingArchiver:
         
         self.target_network=None
                 
-    def set_archiving_frequencies(self, **kwargs):
+    def set_archiving_frequencies(self, **kwargs): # public.
         
         self.archiving_frequencies["activation"]=kwargs.get("activation", 0)
         self.archiving_frequencies["preactivation"]=kwargs.get("preactivation", 0)
@@ -691,7 +704,7 @@ class TrainingArchiver:
         self.archiving_frequencies["accuracy"]=kwargs.get("accuracy", 0)
         self.archiving_frequencies["precision"]=kwargs.get("precision", 0)
     
-    def set_archiving_verbosities(self, **kwargs):
+    def set_archiving_verbosities(self, **kwargs): # public.
         """
         Set whether the archiver will be verbose (displays summary) or silent while archiving.
 
@@ -716,10 +729,10 @@ class TrainingArchiver:
         self.archiving_verbosities["accuracy"]=kwargs.get("accuracy", 0)
         self.archiving_verbosities["precision"]=kwargs.get("precision", 0)
         
-    def set_target_network(self, target_network):
+    def _set_target_network(self, target_network): # module-private.
         self.target_network=target_network
     
-    def archive_activations(self):
+    def _archive_activations(self): # module-private.
         i = self.target_network.num_latest_iteration
         
         if i % self.archiving_frequencies["activation"] == 0:
@@ -729,7 +742,7 @@ class TrainingArchiver:
                 acts_all_layers[l]=copy.deepcopy(self.target_network.layers[l].A)
             self.all_activations[i]=acts_all_layers
     
-    def archive_preactivations(self):
+    def _archive_preactivations(self): # module-private.
         i = self.target_network.num_latest_iteration
         
         if i % self.archiving_frequencies["preactivation"] == 0:
@@ -739,7 +752,7 @@ class TrainingArchiver:
                 preacts_all_layers[l]=copy.deepcopy(self.target_network.layers[l].Z)
             self.all_preactivations[i]=preacts_all_layers        
         
-    def archive_gradients(self):
+    def _archive_gradients(self): # module-private.
         i = self.target_network.num_latest_iteration
         
         if i % self.archiving_frequencies["gradient"] == 0:
@@ -749,7 +762,7 @@ class TrainingArchiver:
                 grads_all_layers[l]=copy.deepcopy(self.target_network.layers[l].gradients)
             self.all_gradients[i]=grads_all_layers
     
-    def archive_parameters(self):
+    def _archive_parameters(self): # module-private.
         i = self.target_network.num_latest_iteration
         
         if i % self.archiving_frequencies["parameters"] == 0:
@@ -760,7 +773,7 @@ class TrainingArchiver:
                 params_all_layers["B"+str(l)]=copy.deepcopy(self.target_network.layers[l].B)
             self.all_parameters[i]=params_all_layers
             
-    def compute_and_archive_accuracy(self, acc_type):
+    def _compute_and_archive_accuracy(self, acc_type): # module-private.
         i = self.target_network.num_latest_iteration
         if i % self.archiving_frequencies["accuracy"] == 0:
             if acc_type=="training":
@@ -772,7 +785,7 @@ class TrainingArchiver:
                 self.all_validation_accuracies[i]=self.target_network.latest_accuracy
                 self._display_latest_if_valid(archival_target="accuracy", prefix="validation")
                 
-    def compute_and_archive_precision(self, precis_type):
+    def _compute_and_archive_precision(self, precis_type): # module-private.
         i = self.target_network.num_latest_iteration
         if i % self.archiving_frequencies["precision"] == 0:
             if precis_type=="training":
@@ -783,23 +796,24 @@ class TrainingArchiver:
                 self.target_network._compute_precision()
                 self.all_validation_precisions[i]=self.target_network.latest_precision
                 self._display_latest_if_valid(archival_target="precision", prefix="validation")
-    def compute_and_archive_cost(self, cost_type):
+                
+    def _compute_and_archive_cost(self, cost_type): # module-private.
         i = self.target_network.num_latest_iteration
         
         if i % self.archiving_frequencies["cost"] == 0:
             
             if cost_type=="training":
-                self.target_network.compute_cost()
+                self.target_network._compute_cost()
                 self.all_training_costs[i] = self.target_network.cost
                 self._display_latest_if_valid(archival_target="cost", prefix="training")
                 
             if cost_type=="validation":
-                self.target_network.compute_cost()
+                self.target_network._compute_cost()
                 self.all_validation_costs[i] = self.target_network.cost
                 
                 self._display_latest_if_valid(archival_target="cost", prefix="validation")
 
-    def _display_latest_if_valid(self, archival_target, prefix=None, suffix=None):
+    def _display_latest_if_valid(self, archival_target, prefix=None, suffix=None): # module-private.
         if prefix==None: prefix=""
         if suffix==None: suffix=""
         
