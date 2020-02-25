@@ -57,7 +57,7 @@ class Layer: # public.
         """
         Performs the forward propagation for a layer.
         """        
-        self.__compute_linear_preactivation()
+        self._compute_linear_preactivation()
         
         self.A=self.activation_type._forward_pass(self.Z)
         

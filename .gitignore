@@ -2,3 +2,5 @@ toy_data_generator.py
 playground.py
 datasets/kaggle-cats-and-dogs/
 datasets/chest-xray-pneumonia/
+__pycache__/
+.ipynb_checkpoints/
