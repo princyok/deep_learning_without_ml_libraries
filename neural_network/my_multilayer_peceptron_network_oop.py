@@ -119,7 +119,13 @@ class Layer: # public.
         self.Z = np.matmul(self.W, A_prior) + self.B
                     
         return None
-
+    
+    def _is_initialized(self): # module-private.
+        if (self.W is None) or (self.B is None):
+            return False
+        else:
+            return True
+    
 class _InputLayer(Layer): # module-private.
 
     def __init__(self, X, parent_network):
@@ -270,6 +276,8 @@ class Network: # public.
 
     def train(self, num_iterations=10, batch_size=10, learning_rate=0.0000009, print_costs=True): # public.
         
+        self._check_readiness_to_train()
+        
         print("Training Begins...")
         
 
@@ -342,7 +350,35 @@ class Network: # public.
             
         return score
         
-    
+    def _check_readiness_to_train(self):
+        """
+        Check that at least one layer (excluding input layer) has been added, 
+        parameters of all layers have been initialized, and a training archiver
+        has been added.
+        
+        RAISES
+        ------
+        ValueError:
+            If any of the checks fail.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        if self.num_layers is None or self.num_layers == 0:
+            raise ValueError("No layers have been added to the network.")
+        
+        for l in self.layers.keys():
+            if l==0:
+                continue # no need to check input layer.
+            if not self.layers[l]._is_initialized():
+                raise ValueError("The parameters for one or more layers have not been initialized.")
+        
+        if not isinstance(self.training_archiver, TrainingArchiver):
+            raise ValueError("A training archiver to cache training progress and results has not been added.")
+        
     def _update_num_layers(self): # class-private.
         self.num_layers=len(self.layers) - 1
         

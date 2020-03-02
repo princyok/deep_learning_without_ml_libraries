@@ -21,29 +21,27 @@ class Neuron:
         self.Y_batch=None
         
         self.a=None
-        self.Z=None
+        self.z=None
         self.w=None
         self.b=None
-        
-        self.cost=None
-        
+                
         self.dAdZ=None
         self.dJdA=None
         self.dJdZ=None
         self.dJdW=None
         self.dJdB=None
         
-    def _logistic(self, Z):
-        a = 1/(1+np.exp(-Z))
+    def _logistic(self, z):
+        a = 1/(1+np.exp(-z))
         return a
     
     def _logistic_gradient(self, a):
         dAdZ = a * (1-a)
         return dAdZ
-    
+        
     def _forward(self):
-        self.Z = np.matmul(self.w, self.X_batch) + self.b
-        self.a=self._logistic(self.Z)
+        self.z = np.matmul(self.w, self.X_batch) + self.b
+        self.a=self._logistic(self.z)
     
     def _backward(self):
         m = self.X.shape[1]
@@ -53,7 +51,7 @@ class Neuron:
         self.dJdZ = self.dAdZ * self.dJdA
         
         self.dJdW=(1/m) * np.matmul(self.dJdZ, self.X_batch.T) 
-        self.dJdB= np.sum(self.dJdZ, axis=1)
+        self.dJdB= np.average(self.dJdZ, axis=1)
         
     def _update_parameters_via_gradient_descent (self, learning_rate):
         self.w = self.w - learning_rate * self.dJdW
