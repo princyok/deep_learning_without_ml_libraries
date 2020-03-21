@@ -4,3 +4,5 @@ datasets/kaggle-cats-and-dogs/
 datasets/chest-xray-pneumonia/
 __pycache__/
 .ipynb_checkpoints/
+playground2.py
+playground3.py

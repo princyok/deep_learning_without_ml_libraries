@@ -14,6 +14,14 @@ import copy
 import helper_funcs
 np.seterr(over="warn", under="warn") # warn for overflows and underflows.
 
+# check whether major version has changed.
+
+if(int(np.__version__[0])!=1):
+    message="Caution: This module was created with numpy major version 1, "+\
+    "but the current major version is "+str(np.__version__[0])
+    print(message)
+    
+    
 class Layer: # public.
     """
     Standard feedforward neural network (a.k.a. multilayer pecetron).
@@ -84,10 +92,10 @@ class Layer: # public.
         
         # for training batch of size > 1,  a compromise for dJdB, is an average of dJdZ across the batch.
         # using np.sum instead of np.average for readability.
-        self.gradients["dJdB"] = (1/m) * np.sum(self.gradients["dJdZ"], axis=1) 
+        self.gradients["dJdB"] = np.sum(self.gradients["dJdZ"], axis=1) 
         
         # rescale by same factor as dJdB, to keep scaling consistent with dJdB.
-        self.gradients["dJdW"] = (1/m) * np.matmul(self.gradients["dJdZ"], A_prior.T)
+        self.gradients["dJdW"] = np.matmul(self.gradients["dJdZ"], A_prior.T)
         
         # don't scale dJdA.
         self.preceding_layer.gradients["dJdA"] = np.matmul(self.W.T, self.gradients["dJdZ"])
@@ -453,7 +461,7 @@ class Network: # public.
         A_last=self.layers[L].A
         
         # Computes cross entropy loss. The equation assumes both A_last and Y_batch are vectors (binary classification).
-        self.cost = (-1 / m) * np.sum((self.Y_batch * np.log(A_last)) + 
+        self.cost = (-1/m) * np.sum((self.Y_batch * np.log(A_last)) + 
                                               ((1 - self.Y_batch) * np.log(1 - A_last)))
         
         self.cost = np.squeeze(self.cost) # ensures cost is a scalar (this turns [[10]] or [10] into 10).
@@ -466,9 +474,10 @@ class Network: # public.
         Compute dJ/dA for the last layer. This assumes a cross-entropy cost function.
         """
         L=self.num_layers
+        m = self.Y_batch.shape[1]
         A_last=self.layers[L].A
         
-        self.layers[L].gradients["dJdA"] = - ((self.Y_batch / A_last) - 
+        self.layers[L].gradients["dJdA"] = -(1/m) * ((self.Y_batch / A_last) - 
                                     ((1 - self.Y_batch) / (1 - A_last)))
         return None
 

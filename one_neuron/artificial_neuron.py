@@ -44,14 +44,14 @@ class Neuron:
         self.a=self._logistic(self.z)
     
     def _backward(self):
-        m = self.X.shape[1]
+        m = self.X_batch.shape[1]
         self.dAdZ=self._logistic_gradient(self.a)
-        self.dJdA = - ((self.Y_batch / self.a) - ((1 - self.Y_batch) / (1 - self.a)))
+        self.dJdA = -(1/m) * ((self.Y_batch / self.a) - ((1 - self.Y_batch) / (1 - self.a)))
         
         self.dJdZ = self.dAdZ * self.dJdA
         
-        self.dJdW=(1/m) * np.matmul(self.dJdZ, self.X_batch.T) 
-        self.dJdB= np.average(self.dJdZ, axis=1)
+        self.dJdW= np.matmul(self.dJdZ, self.X_batch.T) 
+        self.dJdB= np.sum(self.dJdZ, axis=1)
         
     def _update_parameters_via_gradient_descent (self, learning_rate):
         self.w = self.w - learning_rate * self.dJdW
