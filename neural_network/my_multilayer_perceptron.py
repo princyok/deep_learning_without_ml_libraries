@@ -86,18 +86,13 @@ class Layer: # public.
         """
         
         
+        
         A_prior = self.preceding_layer.A
-        
-        m = A_prior.shape[1] # activation is expected to have shape of the form (# of units in layer, # of examples in batch).
-        
-        # for training batch of size > 1,  a compromise for dJdB, is an average of dJdZ across the batch.
-        # using np.sum instead of np.average for readability.
+
         self.gradients["dJdB"] = np.sum(self.gradients["dJdZ"], axis=1) 
         
-        # rescale by same factor as dJdB, to keep scaling consistent with dJdB.
         self.gradients["dJdW"] = np.matmul(self.gradients["dJdZ"], A_prior.T)
         
-        # don't scale dJdA.
         self.preceding_layer.gradients["dJdA"] = np.matmul(self.W.T, self.gradients["dJdZ"])
         
         return None
@@ -111,7 +106,7 @@ class Layer: # public.
         
         self.gradients["dAdZ"]=self.activation_type._backward_pass(A, Z)
 
-        self.gradients["dJdZ"] = self.gradients["dAdZ"] * self.gradients["dJdA"]
+        self.gradients["dJdZ"] =self.gradients["dJdA"]* self.gradients["dAdZ"]
         
         self._compute_cost_gradients()
         
@@ -282,20 +277,23 @@ class Network: # public.
                 self.layers[l].B = np.ones((self.layers[l].num_units, 1)) * factor 
         return None
 
-    def train(self, num_iterations=10, batch_size=10, learning_rate=0.0000009, print_costs=True): # public.
+    # public.
+    def train(self, num_iterations=10, batch_size=None, learning_rate=0.0000009, print_start_end=True,
+              validation_X=None, validation_Y=None): 
         
-        self._check_readiness_to_train()
+        self._check_readiness_to_train() # Raises an exception if not ready.
         
-        print("Training Begins...")
+        if print_start_end==True: print("Training Begins...")
         
 
         num_iterations=num_iterations+self.num_latest_iteration
         
         for self.num_latest_iteration in range(self.num_latest_iteration+1, num_iterations+1):
-            # loop header: allows training to be resumable for the network from the state it was in 
-            #  at end of its last training.
+            # loop header: allows training to resume from the previous state of the network
+            #  at end of its last training if any.
                 
             # select batch from the training dataset.
+            if batch_size is None: batch_size=self.X.shape[1] # use the entire data.
             
             random_indices = np.random.choice(self.Y.shape[1], (batch_size,), replace=False)
             
@@ -317,22 +315,29 @@ class Network: # public.
             self.training_archiver._compute_and_archive_accuracy(acc_type="training")
             self.training_archiver._compute_and_archive_precision(precis_type="training")
             
-            # Compute the validation cost, accuracy and precision (using the entire training dataset).
-            
-            self.input_layer.A = self.X   
-            self.Y_batch=self.Y
-            
-            self._network_forward_prop()
-            self.training_archiver._compute_and_archive_cost(cost_type="validation")
-            self.training_archiver._compute_and_archive_accuracy(acc_type="validation")
-            self.training_archiver._compute_and_archive_precision(precis_type="validation")
+            # Compute the validation cost, accuracy and precision (using validation dataset).
+            if (validation_Y is None) or (validation_X is None):
+                pass
+            else:
+                self.input_layer.A = validation_X   
+                self.Y_batch = validation_Y
+                
+                self._network_forward_prop()
+                self.training_archiver._compute_and_archive_cost(cost_type="validation")
+                self.training_archiver._compute_and_archive_accuracy(acc_type="validation")
+                self.training_archiver._compute_and_archive_precision(precis_type="validation")
             
             # rest of caching occurs here.
             
             self.training_archiver._archive_gradients()
             self.training_archiver._archive_parameters()
             
-        print("Training Complete!")
+            # print archiving messages if any:
+            if self.training_archiver.report: 
+                self.training_archiver._print_report()
+                self.training_archiver._clear_report()
+            
+        if print_start_end: print("Training Complete!")
             
     def evaluate(self, X, Y, metric="accuracy"): # public.
         # assumes binary classification.
@@ -738,6 +743,8 @@ class TrainingArchiver:
         self.all_validation_costs=dict()
         
         self.target_network=None
+        
+        self.report=""
                 
     def set_archiving_frequencies(self, **kwargs): # public.
         
@@ -780,7 +787,7 @@ class TrainingArchiver:
     def _archive_activations(self): # module-private.
         i = self.target_network.num_latest_iteration
         
-        if i % self.archiving_frequencies["activation"] == 0:
+        if (self.archiving_frequencies["activation"]!=0) and (i % self.archiving_frequencies["activation"] == 0):
             L = self.target_network.num_layers
             acts_all_layers=dict()
             for l in range(1, L+1):
@@ -790,7 +797,7 @@ class TrainingArchiver:
     def _archive_preactivations(self): # module-private.
         i = self.target_network.num_latest_iteration
         
-        if i % self.archiving_frequencies["preactivation"] == 0:
+        if (self.archiving_frequencies["preactivation"]!=0) and (i % self.archiving_frequencies["preactivation"] == 0):
             L = self.target_network.num_layers
             preacts_all_layers=dict()
             for l in range(1, L+1):
@@ -800,7 +807,7 @@ class TrainingArchiver:
     def _archive_gradients(self): # module-private.
         i = self.target_network.num_latest_iteration
         
-        if i % self.archiving_frequencies["gradient"] == 0:
+        if (self.archiving_frequencies["gradient"]!=0) and (i % self.archiving_frequencies["gradient"] == 0):
             L = self.target_network.num_layers
             grads_all_layers=dict()
             for l in range(1, L+1):
@@ -810,7 +817,7 @@ class TrainingArchiver:
     def _archive_parameters(self): # module-private.
         i = self.target_network.num_latest_iteration
         
-        if i % self.archiving_frequencies["parameters"] == 0:
+        if (self.archiving_frequencies["parameters"]!=0) and (i % self.archiving_frequencies["parameters"] == 0):
             L = self.target_network.num_layers
             params_all_layers=dict()
             for l in range (1, L+1):
@@ -820,45 +827,45 @@ class TrainingArchiver:
             
     def _compute_and_archive_accuracy(self, acc_type): # module-private.
         i = self.target_network.num_latest_iteration
-        if i % self.archiving_frequencies["accuracy"] == 0:
+        if (self.archiving_frequencies["accuracy"]!=0) and (i % self.archiving_frequencies["accuracy"] == 0):
             if acc_type=="training":
                 self.target_network._compute_accuracy()
                 self.all_training_accuracies[i]=self.target_network.latest_accuracy
-                self._display_latest_if_valid(archival_target="accuracy", prefix="training")
+                self._update_report(archival_target="accuracy", prefix="training")
             if acc_type=="validation":
                 self.target_network._compute_accuracy()
                 self.all_validation_accuracies[i]=self.target_network.latest_accuracy
-                self._display_latest_if_valid(archival_target="accuracy", prefix="validation")
+                self._update_report(archival_target="accuracy", prefix="validation")
                 
     def _compute_and_archive_precision(self, precis_type): # module-private.
         i = self.target_network.num_latest_iteration
-        if i % self.archiving_frequencies["precision"] == 0:
+        if (self.archiving_frequencies["precision"]!=0) and (i % self.archiving_frequencies["precision"] == 0):
             if precis_type=="training":
                 self.target_network._compute_precision()
                 self.all_training_precisions[i]=self.target_network.latest_precision
-                self._display_latest_if_valid(archival_target="precision", prefix="training")
+                self._update_report(archival_target="precision", prefix="training")
             if precis_type=="validation":
                 self.target_network._compute_precision()
                 self.all_validation_precisions[i]=self.target_network.latest_precision
-                self._display_latest_if_valid(archival_target="precision", prefix="validation")
+                self._update_report(archival_target="precision", prefix="validation")
                 
     def _compute_and_archive_cost(self, cost_type): # module-private.
         i = self.target_network.num_latest_iteration
         
-        if i % self.archiving_frequencies["cost"] == 0:
+        if (self.archiving_frequencies["cost"]!=0) and (i % self.archiving_frequencies["cost"] == 0):
             
             if cost_type=="training":
                 self.target_network._compute_cost()
                 self.all_training_costs[i] = self.target_network.cost
-                self._display_latest_if_valid(archival_target="cost", prefix="training")
+                self._update_report(archival_target="cost", prefix="training")
                 
             if cost_type=="validation":
                 self.target_network._compute_cost()
                 self.all_validation_costs[i] = self.target_network.cost
                 
-                self._display_latest_if_valid(archival_target="cost", prefix="validation")
+                self._update_report(archival_target="cost", prefix="validation")
 
-    def _display_latest_if_valid(self, archival_target, prefix=None, suffix=None): # module-private.
+    def _update_report(self, archival_target, prefix=None, suffix=None): # module-private.
         if prefix==None: prefix=""
         if suffix==None: suffix=""
         
@@ -867,22 +874,26 @@ class TrainingArchiver:
         if self.archiving_verbosities[archival_target]:
             
             if archival_target=="accuracy" and prefix=="validation":
-                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
-                      helper_funcs.sigfig(self.all_validation_accuracies[i]))
+                self.report += prefix+" "+archival_target+", iter. "+str(i)+": "+\
+                      str(helper_funcs.sigfig(self.all_validation_accuracies[i]))+"\n"
             elif archival_target=="accuracy" and prefix=="training":
-                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
-                      helper_funcs.sigfig(self.all_training_accuracies[i]))                
+                self.report += prefix+" "+archival_target+", iter. "+str(i)+": "+\
+                      str(helper_funcs.sigfig(self.all_training_accuracies[i]))+"\n"                
             
             if archival_target=="cost" and prefix=="validation":
-                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
-                      helper_funcs.sigfig(self.all_validation_costs[i]))
+                self.report += prefix+" "+archival_target+", iter. "+str(i)+": "+\
+                      str(helper_funcs.sigfig(self.all_validation_costs[i]))+"\n"
             elif archival_target=="cost" and prefix=="training":
-                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
-                      helper_funcs.sigfig(self.all_training_costs[i]))
+                self.report += prefix+" "+archival_target+", iter. "+str(i)+": "+\
+                      str(helper_funcs.sigfig(self.all_training_costs[i]))+"\n"
 
             if archival_target=="precision" and prefix=="validation":
-                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
-                      helper_funcs.sigfig(self.all_validation_precisions[i]))
+                self.report += prefix+" "+archival_target+", iter. "+str(i)+": "+\
+                      str(helper_funcs.sigfig(self.all_validation_precisions[i]))+"\n"
             elif archival_target=="precision" and prefix=="training":
-                print(prefix+" "+archival_target+", iter. "+str(i)+": ",
-                      helper_funcs.sigfig(self.all_training_precisions[i]))                
+                self.report += prefix+" "+archival_target+", iter. "+str(i)+": "+\
+                      str(helper_funcs.sigfig(self.all_training_precisions[i]))+"\n"
+    def _clear_report(self):
+        self.report=""
+    def _print_report(self):
+        print(self.report,"="*10)
