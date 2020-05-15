@@ -1,4 +1,4 @@
-# Deep_Learning_Without_ML_Libraries
+# deep_learning_without_ml_libraries
 
 A deep learning module for a standard feedforward neural network designed straight from the mathematical formulations and without reliance on any machine learning libraries.
 
