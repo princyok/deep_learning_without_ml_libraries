@@ -51,6 +51,8 @@ class Neuron:
         self.dJdZ = self.dAdZ * self.dJdA
         
         self.dJdW= np.matmul(self.dJdZ, self.X_batch.T) 
+        # self.dJdB= np.matmul(self.dJdZ, np.ones(self.z.shape).T)
+
         self.dJdB= np.sum(self.dJdZ, axis=1)
         
     def _update_parameters_via_gradient_descent (self, learning_rate):

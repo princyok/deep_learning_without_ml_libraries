@@ -1,8 +1,27 @@
-toy_data_generator.py
-playground.py
-datasets/kaggle-cats-and-dogs/
-datasets/chest-xray-pneumonia/
+# IDE caches
+
 __pycache__/
 .ipynb_checkpoints/
+
+# other py files
+
+playground.py
 playground2.py
 playground3.py
+toy_data_generator.py
+
+# ipynb files
+
+Cats_vs_dogs_Petfinder_MS-Research_Kaggle.ipynb
+COVID-19_Chest_X-Ray.ipynb
+Cats_vs_NotCat.ipynb
+
+# large datasets (over 500 mb)
+
+datasets/chest-xray-pneumonia/
+
+# other directories
+
+files_dump/
+saved_models/
+datasets/covid-chestxray-dataset-0.1/

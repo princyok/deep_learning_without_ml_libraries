@@ -5,7 +5,7 @@
 A multilayer percetron network for binary classification.
 
 The nonflexible components are:
-    Cost function: Cross entropy loss.
+    Cost function: Cross entropy loss (binary).
     Parameter optimizer: Vanilla gradient descent.
 """
 
@@ -85,8 +85,6 @@ class Layer: # public.
         Computes dJ/dW and dJ/dB of the layer and dJ/dA of the preceding layer.
         """
         
-        
-        
         A_prior = self.preceding_layer.A
 
         self.gradients["dJdB"] = np.sum(self.gradients["dJdZ"], axis=1) 
@@ -106,7 +104,7 @@ class Layer: # public.
         
         self.gradients["dAdZ"]=self.activation_type._backward_pass(A, Z)
 
-        self.gradients["dJdZ"] =self.gradients["dJdA"]* self.gradients["dAdZ"]
+        self.gradients["dJdZ"] =self.gradients["dJdA"] * self.gradients["dAdZ"]
         
         self._compute_cost_gradients()
         
@@ -123,20 +121,14 @@ class Layer: # public.
                     
         return None
     
-    def _is_initialized(self): # module-private.
-        if (self.W is None) or (self.B is None):
-            return False
-        else:
-            return True
-    
 class _InputLayer(Layer): # module-private.
-
-    def __init__(self, X, parent_network):
-        
-        super().__init__(activation_name=None, num_units= X.shape[0])
-        self.A=X
+    def __init__(self, parent_network):
+        super().__init__(activation_name=None, num_units= None)
         self.position_in_network=0
         self.parent_network=parent_network
+    def _populate(self, X):
+        self.A=X
+        self.num_units=X.shape[0]
 
 class Network: # public.
     """
@@ -158,16 +150,12 @@ class Network: # public.
 
     # TODO: Finish up list of attributes.
     """
-    def __init__(self, X, Y):
+    def __init__(self):
+        self.X=None
+        self.Y=None
         
-        if (Y.shape[1]!=X.shape[1] or Y.shape[0]!=1):
-            raise ValueError("X and Y must have compatible shapes, n x m and 1 x m respectively.")
-        self.Y=Y
-        self.X=X
+        self.input_layer=_InputLayer(parent_network=self)
         
-        self.input_layer=_InputLayer(X=self.X, parent_network=self)
-        
-        self.cost=None
         self.layers=dict()
         
         self.temp_cache_network = dict()
@@ -179,6 +167,8 @@ class Network: # public.
         
         self._add_input_layer()
         
+        self.cost=None
+        
         self.latest_accuracy=None # latest accuracy computed for a forward propagation.
         self.latest_precision=None # latest precision computed for a forward propagation.
         
@@ -186,6 +176,7 @@ class Network: # public.
         
         self.num_latest_iteration=0
         
+        self.parameter_initializer=None
         self.training_archiver=None
         
     def add_layers(self, layers): # public.
@@ -251,40 +242,35 @@ class Network: # public.
         None.
 
         """
+        if (factor<=0 or factor>=1):
+            raise ValueError("factor must range from 0 to 1.")
+            
         weight_init_scheme = weight_init_scheme.lower()
         bias_init_scheme = bias_init_scheme.lower()
-        
-        assert (factor>=0 and factor<=1) # factor must range from 0 to 1.
-        
-        rnd=np.random.RandomState(random_seed)
-        
-        L = self.num_layers # number of layers in the network.
-    
-        for l in range(1, L+1):
-            
-            # initializing weights.
+                
+        self.parameter_initializer=_ParameterInitializer(weight_init_scheme=weight_init_scheme, 
+                                                         bias_init_scheme=bias_init_scheme,
+                                                         factor=factor,random_seed=random_seed)
+        self.parameter_initializer.parent_network=self
 
-            if weight_init_scheme=="default":
-                self.layers[l].W = rnd.randn(self.layers[l].num_units, self.layers[l-1].num_units) * factor
-            elif weight_init_scheme=="xavier":
-                self.layers[l].W = rnd.randn(self.layers[l].num_units, self.layers[l-1].num_units) / np.sqrt(self.layers[l-1].num_units)
-            
-            # initializing biases.
-            
-            if bias_init_scheme=="zeros":
-                self.layers[l].B = np.zeros((self.layers[l].num_units, 1)) * factor
-            elif bias_init_scheme=="ones":
-                self.layers[l].B = np.ones((self.layers[l].num_units, 1)) * factor 
-        return None
-
+    def _is_initializer_added(self): # module-private.
+        if (self.parameter_initializer==None):
+            return False
+        else:
+            return True
     # public.
-    def train(self, num_iterations=10, batch_size=None, learning_rate=0.0000009, print_start_end=True,
+    def train(self, X, Y, num_iterations=10, batch_size=None, learning_rate=0.0000009, print_start_end=True,
               validation_X=None, validation_Y=None): 
         
         self._check_readiness_to_train() # Raises an exception if not ready.
         
-        if print_start_end==True: print("Training Begins...")
+        if (Y.shape[1]!=X.shape[1] or Y.shape[0]!=1):
+            raise ValueError("X and Y must have compatible shapes, n x m and 1 x m respectively.")
         
+        self.Y=Y 
+        self.X=X         
+        
+        if print_start_end==True: print("Training Begins...")
 
         num_iterations=num_iterations+self.num_latest_iteration
         
@@ -298,7 +284,7 @@ class Network: # public.
             random_indices = np.random.choice(self.Y.shape[1], (batch_size,), replace=False)
             
             self.Y_batch=self.Y[:,random_indices]
-            self.input_layer.A = self.X[:,random_indices]
+            self.input_layer._populate(self.X[:,random_indices])
                   
             # Forward propagation.
             self._network_forward_prop()
@@ -319,7 +305,7 @@ class Network: # public.
             if (validation_Y is None) or (validation_X is None):
                 pass
             else:
-                self.input_layer.A = validation_X   
+                self.input_layer._populate(validation_X)
                 self.Y_batch = validation_Y
                 
                 self._network_forward_prop()
@@ -349,7 +335,7 @@ class Network: # public.
         if not any(m == metric.lower() for m in _available_perfomance_metrics):
             raise ValueError
                 
-        self.input_layer.A = X
+        self.input_layer._populate(X)
         self.Y_batch=Y
         
         self._network_forward_prop()
@@ -362,6 +348,11 @@ class Network: # public.
             score=self.latest_precision
             
         return score
+        
+    def predict(self, X): #public.
+        self.input_layer._populate(X)
+        self._network_forward_prop()
+        return self.Y_pred
         
     def _check_readiness_to_train(self):
         """
@@ -386,11 +377,11 @@ class Network: # public.
         for l in self.layers.keys():
             if l==0:
                 continue # no need to check input layer.
-            if not self.layers[l]._is_initialized():
-                raise ValueError("The parameters for one or more layers have not been initialized.")
+            if not self._is_initializer_added():
+                raise ValueError("Parameters have not been initialized.")
         
         if not isinstance(self.training_archiver, TrainingArchiver):
-            raise ValueError("A training archiver to cache training progress and results has not been added.")
+            raise ValueError("A training archiver to cache data from training and display results has not been added.")
         
     def _update_num_layers(self): # class-private.
         self.num_layers=len(self.layers) - 1
@@ -438,6 +429,8 @@ class Network: # public.
         None.
 
         """
+        self.parameter_initializer._execute_initialization_if_notdone()
+            
         L = self.num_layers
     
         for l in range(1, L):
@@ -563,6 +556,60 @@ class Network: # public.
         mask_pred_positives = (Y_pred==1)
         self.latest_precision=np.average(np.where(Y_pred[mask_pred_positives]==Y_true[mask_pred_positives], 1, 0))
         
+        return None
+    
+class _ParameterInitializer: # module-private.
+
+    def __init__(self, weight_init_scheme="xavier", bias_init_scheme="zeros", 
+                 factor=0.01,random_seed=3):
+        
+        self.weight_init_scheme=weight_init_scheme
+        self.bias_init_scheme=bias_init_scheme
+        self.factor=factor
+        self.rnd=np.random.RandomState(random_seed)
+        self.status=0
+        self.parent_network=None
+        
+    def _execute_initialization_if_notdone(self):
+        
+        if self.status==0:
+            L = self.parent_network.num_layers # number of layers in the network.
+        
+            for l in range(1, L+1):
+                
+                # initializing weights.
+                self._initialize_weights(l)
+                
+                # initializing biases.
+                self._initialize_biases(l)
+                
+            self.status=1
+        
+        return None
+    
+    def _initialize_weights(self, layer_sn):
+        l=layer_sn
+        if self.weight_init_scheme=="default":
+            self.parent_network.layers[l].W = self.rnd.randn(self.parent_network.layers[l].num_units, 
+                                              self.parent_network.layers[l-1].num_units)\
+                * self.factor
+        
+        elif self.weight_init_scheme=="xavier":
+            self.parent_network.layers[l].W = self.rnd.randn(self.parent_network.layers[l].num_units, 
+                                              self.parent_network.layers[l-1].num_units)\
+                / np.sqrt(self.parent_network.layers[l-1].num_units)
+                
+        return None
+        
+    def _initialize_biases(self, layer_sn):
+        l=layer_sn
+        if self.bias_init_scheme=="zeros":
+            self.parent_network.layers[l].B = np.zeros((self.parent_network.layers[l].num_units, 1))\
+                * self.factor
+        elif self.bias_init_scheme=="ones":
+            self.parent_network.layers[l].B = np.ones((self.parent_network.layers[l].num_units, 1))\
+                * self.factor              
+
         return None
     
 class _ActivationFunction: # module-private.
