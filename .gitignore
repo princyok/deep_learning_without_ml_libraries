@@ -12,9 +12,13 @@ toy_data_generator.py
 
 # ipynb files
 
+Chest_X-Ray_Pneumonia.ipynb
 Cats_vs_dogs_Petfinder_MS-Research_Kaggle.ipynb
 COVID-19_Chest_X-Ray.ipynb
 Cats_vs_NotCat.ipynb
+US_Adult_Income.ipynb
+Toy_Dataset_vs_Artificial_Neuron.ipynb
+Breast_Cancer_Wisconsin.ipynb
 
 # large datasets (over 500 mb)
 
@@ -22,6 +26,7 @@ datasets/chest-xray-pneumonia/
 
 # other directories
 
+experiments/
 files_dump/
 saved_models/
 datasets/covid-chestxray-dataset-0.1/

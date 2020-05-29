@@ -248,7 +248,7 @@ class Network: # public.
         weight_init_scheme = weight_init_scheme.lower()
         bias_init_scheme = bias_init_scheme.lower()
                 
-        self.parameter_initializer=_ParameterInitializer(weight_init_scheme=weight_init_scheme, 
+        self.parameter_initializer=ParameterInitializer(weight_init_scheme=weight_init_scheme, 
                                                          bias_init_scheme=bias_init_scheme,
                                                          factor=factor,random_seed=random_seed)
         self.parameter_initializer.parent_network=self
@@ -266,6 +266,9 @@ class Network: # public.
         
         if (Y.shape[1]!=X.shape[1] or Y.shape[0]!=1):
             raise ValueError("X and Y must have compatible shapes, n x m and 1 x m respectively.")
+            
+        if (Y.shape[0] != self.layers[self.num_layers].num_units):
+            raise ValueError("Y and the output layer must have compatible shapes.")
         
         self.Y=Y 
         self.X=X         
@@ -528,7 +531,7 @@ class Network: # public.
         None.
 
         """        
-        L = self.num_layers # number of layers in the network.
+        L = self.num_layers # number of layers in the network (also sn of last layer).
     
         # the basic gradient descent.
         for l in range(1, L+1):
@@ -558,7 +561,7 @@ class Network: # public.
         
         return None
     
-class _ParameterInitializer: # module-private.
+class ParameterInitializer: # module-public.
 
     def __init__(self, weight_init_scheme="xavier", bias_init_scheme="zeros", 
                  factor=0.01,random_seed=3):
@@ -614,7 +617,7 @@ class _ParameterInitializer: # module-private.
     
 class _ActivationFunction: # module-private.
     
-    _available_activation_funcs=["logistic","relu","tanh"]
+    _available_activation_funcs=["logistic","relu","tanh", "linear"]
     
     def __init__(self, name):      
         if any(a == name.lower() for a in self.__class__._available_activation_funcs):
@@ -628,7 +631,9 @@ class _ActivationFunction: # module-private.
         if self.name=="relu":
             A = self._relu(Z)
         if self.name=="tanh":
-            A = self._tanh(Z) 
+            A = self._tanh(Z)
+        if self.name=="linear":
+            A = self._linear(Z)
         return A
     
     def _backward_pass(self, A,Z): # module-private.
@@ -637,7 +642,9 @@ class _ActivationFunction: # module-private.
         if self.name=="relu":
             dAdZ=self._relu_gradient(Z)
         if self.name=="tanh":
-            dAdZ=self._tanh_gradient(Z)          
+            dAdZ=self._tanh_gradient(Z)
+        if self.name=="linear":
+            dAdZ = self._linear_gradient(Z)    
         return dAdZ
     
     def _logistic(self, Z): # class-private.
@@ -695,6 +702,9 @@ class _ActivationFunction: # module-private.
         """
         A=(np.exp(Z)-np.exp(-Z))/(np.exp(Z)+np.exp(-Z))
         return A
+    
+    def _linear(self, Z): # class-private.
+        return Z
     
     def _relu_gradient(self, Z): # class-private.
         """
@@ -754,6 +764,9 @@ class _ActivationFunction: # module-private.
         dAdZ=1-A**2
         
         return dAdZ
+        
+    def _linear_gradient(self, Z): # class-private.
+        return np.ones(Z.shape)
     
 class TrainingArchiver:
     """
