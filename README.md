@@ -1,5 +1,5 @@
-# Deep_Learning_Without_ML_Libraries
+# deep_learning_without_ml_libraries
 
-A deep learning module that directly implements the equations and the math algorithms that all come together to make deep neural networks work.
+A deep learning module for a standard feedforward neural network designed straight from the mathematical formulations and without reliance on any machine learning libraries.
 
-No ML libraries were used for the main neural network codes. Some ML libraries were used for preprocessing and feature engineering of data.
+Some ML libraries were used for preprocessing of data, but none were used for the neural network code.
