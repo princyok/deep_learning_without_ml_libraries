@@ -7,13 +7,16 @@ __pycache__/
 
 toy_data_generator.py
 
-# all ipynb files
+# ignored ipynb files.
 
-Chest_X-Ray_Pneumonia.ipynb
 Cats_vs_dogs_Petfinder_MS-Research_Kaggle.ipynb
 COVID-19_Chest_X-Ray.ipynb
 Cats_vs_NotCat.ipynb
+
+# manual ipynb files.
+
 US_Adult_Income.ipynb
+Chest_X-Ray_Pneumonia.ipynb
 Toy_Dataset_vs_Artificial_Neuron.ipynb
 Breast_Cancer_Wisconsin.ipynb
 
