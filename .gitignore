@@ -5,12 +5,9 @@ __pycache__/
 
 # other py files
 
-playground.py
-playground2.py
-playground3.py
 toy_data_generator.py
 
-# ipynb files
+# all ipynb files
 
 Chest_X-Ray_Pneumonia.ipynb
 Cats_vs_dogs_Petfinder_MS-Research_Kaggle.ipynb
@@ -25,8 +22,7 @@ Breast_Cancer_Wisconsin.ipynb
 datasets/chest-xray-pneumonia/
 
 # other directories
-
-experiments/
-files_dump/
+neural_network_demonstration/
+junk_dump/
 saved_models/
 datasets/covid-chestxray-dataset-0.1/
