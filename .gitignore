@@ -22,7 +22,6 @@ Breast_Cancer_Wisconsin.ipynb
 datasets/chest-xray-pneumonia/
 
 # other directories
-neural_network_demonstration/
 junk_dump/
 saved_models/
 datasets/covid-chestxray-dataset-0.1/
