@@ -27,7 +27,7 @@ class ParameterInitializer:
         self.status=0
         self.parent_network=None
         
-    def _execute_initialization_if_notdone(self):
+    def execute_initialization_if_notdone(self):
         
         if self.status==0:
             L = self.parent_network.num_layers # number of layers in the network.

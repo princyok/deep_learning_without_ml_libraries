@@ -55,17 +55,17 @@ class Layer: # public.
         self.position_in_network=None
         self.preceding_layer=None
 
-    def _layer_forward_prop(self): # module-private.
+    def layer_forward_prop(self): # module-private.
         """
         Performs the forward propagation for a layer.
         """        
         self._compute_linear_preactivation()
         
-        self.A=self.activation_type._forward_pass(self.Z)
+        self.A=self.activation_type.forward_pass(self.Z)
         
         return None 
         
-    def _incorporate_into_network(self, parent_network): # module-private.
+    def incorporate_into_network(self, parent_network): # module-private.
             
         self.parent_network=parent_network
 
@@ -89,14 +89,14 @@ class Layer: # public.
         
         return None
     
-    def _layer_back_prop(self): # module-private.
+    def layer_back_prop(self): # module-private.
         """
         Peforms backward propagation for a layer.
         """
         Z = self.Z
         A = self.A
         
-        self.gradients["dAdZ"]=self.activation_type._backward_pass(A, Z)
+        self.gradients["dAdZ"]=self.activation_type.backward_pass(A, Z)
 
         self.gradients["dJdZ"] =self.gradients["dJdA"] * self.gradients["dAdZ"]
         
@@ -104,7 +104,7 @@ class Layer: # public.
         
         return None
                 
-    def _compute_linear_preactivation(self): # class-private.
+    def _compute_linear_preactivation(self):
         """
         Computes the preactivation for a layer's forward propagation.
         
@@ -115,7 +115,7 @@ class Layer: # public.
                     
         return None
     
-class _InputLayer(Layer): # module-private.
+class _InputLayer(Layer):
     def __init__(self, parent_network):
         super().__init__(activation_name=None, num_units= None)
         self.position_in_network=0
@@ -124,7 +124,7 @@ class _InputLayer(Layer): # module-private.
         self.A=X
         self.num_units=X.shape[0]
 
-class _ActivationFunction: # module-private.
+class _ActivationFunction:
     
     _available_activation_funcs=["logistic","relu","tanh", "linear"]
     
@@ -134,7 +134,7 @@ class _ActivationFunction: # module-private.
         else:
             raise ValueError
         
-    def _forward_pass(self, Z): # module-private.
+    def forward_pass(self, Z): # module-private.
         if self.name=="logistic":
             A = self._logistic(Z)
         if self.name=="relu":
@@ -145,7 +145,7 @@ class _ActivationFunction: # module-private.
             A = self._linear(Z)
         return A
     
-    def _backward_pass(self, A,Z): # module-private.
+    def backward_pass(self, A, Z): # module-private.
         if self.name=="logistic":
             dAdZ=self._logistic_gradient(A)
         if self.name=="relu":
@@ -156,7 +156,7 @@ class _ActivationFunction: # module-private.
             dAdZ = self._linear_gradient(Z)    
         return dAdZ
     
-    def _logistic(self, Z): # class-private.
+    def _logistic(self, Z):
         """
         The logistic activation function that maps preactivation to activation.
         
@@ -176,7 +176,7 @@ class _ActivationFunction: # module-private.
     
         return A
 
-    def _relu(self, Z): # class-private.
+    def _relu(self, Z):
         """
         The rectified linear activation function that maps preactivation to activation.
     
@@ -195,7 +195,7 @@ class _ActivationFunction: # module-private.
         return A
     
     
-    def _tanh(self, Z): # class-private.
+    def _tanh(self, Z):
         """
         The hyperbolic tangent activation function that maps preactivation to activation.
     
@@ -212,10 +212,10 @@ class _ActivationFunction: # module-private.
         A=(np.exp(Z)-np.exp(-Z))/(np.exp(Z)+np.exp(-Z))
         return A
     
-    def _linear(self, Z): # class-private.
+    def _linear(self, Z):
         return Z
     
-    def _relu_gradient(self, Z): # class-private.
+    def _relu_gradient(self, Z):
         """
         Computes the gradient of a RELU unit w.r.t. the preactivation, for back propagation.
 
@@ -238,7 +238,7 @@ class _ActivationFunction: # module-private.
         dAdZ=result
         return dAdZ
     
-    def _logistic_gradient(self, A): # class-private.
+    def _logistic_gradient(self, A):
         """
         Computes the gradient for a logistic unit w.r.t. the preactivation, for back propagation.
         
@@ -256,7 +256,7 @@ class _ActivationFunction: # module-private.
     
         return dAdZ
     
-    def _tanh_gradient(self, A): # class-private.
+    def _tanh_gradient(self, A):
         """
         Computes the gradient for a hyperbolic tangent unit w.r.t. the preactivation, for back propagation.        
         
@@ -274,6 +274,6 @@ class _ActivationFunction: # module-private.
         
         return dAdZ
         
-    def _linear_gradient(self, Z): # class-private.
+    def _linear_gradient(self, Z):
         return np.ones(Z.shape)
     

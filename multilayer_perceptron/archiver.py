@@ -90,10 +90,10 @@ class TrainingArchiver:
         self.archiving_verbosities["accuracy"]=kwargs.get("accuracy", 0)
         self.archiving_verbosities["precision"]=kwargs.get("precision", 0)
         
-    def _set_target_network(self, target_network): # module-private.
+    def set_target_network(self, target_network): # module-private.
         self.target_network=target_network
     
-    def _archive_activations(self): # module-private.
+    def archive_activations(self): # module-private.
         i = self.target_network.num_latest_iteration
         
         if (self.archiving_frequencies["activation"]!=0) and (i % self.archiving_frequencies["activation"] == 0):
@@ -103,7 +103,7 @@ class TrainingArchiver:
                 acts_all_layers[l]=copy.deepcopy(self.target_network.layers[l].A)
             self.all_activations[i]=acts_all_layers
     
-    def _archive_preactivations(self): # module-private.
+    def archive_preactivations(self): # module-private.
         i = self.target_network.num_latest_iteration
         
         if (self.archiving_frequencies["preactivation"]!=0) and (i % self.archiving_frequencies["preactivation"] == 0):
@@ -113,7 +113,7 @@ class TrainingArchiver:
                 preacts_all_layers[l]=copy.deepcopy(self.target_network.layers[l].Z)
             self.all_preactivations[i]=preacts_all_layers        
         
-    def _archive_gradients(self): # module-private.
+    def archive_gradients(self): # module-private.
         i = self.target_network.num_latest_iteration
         
         if (self.archiving_frequencies["gradient"]!=0) and (i % self.archiving_frequencies["gradient"] == 0):
@@ -123,7 +123,7 @@ class TrainingArchiver:
                 grads_all_layers[l]=copy.deepcopy(self.target_network.layers[l].gradients)
             self.all_gradients[i]=grads_all_layers
     
-    def _archive_parameters(self): # module-private.
+    def archive_parameters(self): # module-private.
         i = self.target_network.num_latest_iteration
         
         if (self.archiving_frequencies["parameters"]!=0) and (i % self.archiving_frequencies["parameters"] == 0):
@@ -134,7 +134,7 @@ class TrainingArchiver:
                 params_all_layers["B"+str(l)]=copy.deepcopy(self.target_network.layers[l].B)
             self.all_parameters[i]=params_all_layers
             
-    def _compute_and_archive_accuracy(self, acc_type): # module-private.
+    def compute_and_archive_accuracy(self, acc_type):
         i = self.target_network.num_latest_iteration
         if (self.archiving_frequencies["accuracy"]!=0) and (i % self.archiving_frequencies["accuracy"] == 0):
             if acc_type=="training":
@@ -146,7 +146,7 @@ class TrainingArchiver:
                 self.all_validation_accuracies[i]=self.target_network.latest_accuracy
                 self._update_report(archival_target="accuracy", prefix="validation")
                 
-    def _compute_and_archive_precision(self, precis_type): # module-private.
+    def compute_and_archive_precision(self, precis_type): # module-private.
         i = self.target_network.num_latest_iteration
         if (self.archiving_frequencies["precision"]!=0) and (i % self.archiving_frequencies["precision"] == 0):
             if precis_type=="training":
@@ -158,18 +158,18 @@ class TrainingArchiver:
                 self.all_validation_precisions[i]=self.target_network.latest_precision
                 self._update_report(archival_target="precision", prefix="validation")
                 
-    def _compute_and_archive_cost(self, cost_type): # module-private.
+    def compute_and_archive_cost(self, cost_type):
         i = self.target_network.num_latest_iteration
         
         if (self.archiving_frequencies["cost"]!=0) and (i % self.archiving_frequencies["cost"] == 0):
             
             if cost_type=="training":
-                self.target_network._compute_cost()
+                self.target_network.compute_cost()
                 self.all_training_costs[i] = self.target_network.cost
                 self._update_report(archival_target="cost", prefix="training")
                 
             if cost_type=="validation":
-                self.target_network._compute_cost()
+                self.target_network.compute_cost()
                 self.all_validation_costs[i] = self.target_network.cost
                 
                 self._update_report(archival_target="cost", prefix="validation")
@@ -202,7 +202,7 @@ class TrainingArchiver:
             elif archival_target=="precision" and prefix=="training":
                 self.report += prefix+" "+archival_target+", iter. "+str(i)+": "+\
                       str(_helper_funcs.sigfig(self.all_training_precisions[i]))+"\n"
-    def _clear_report(self):
+    def clear_report(self):
         self.report=""
-    def _print_report(self):
+    def print_report(self):
         print(self.report,"="*10)

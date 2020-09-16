@@ -72,7 +72,7 @@ class MLPNetwork: # public.
         self.parameter_initializer=None
         self.training_archiver=None
         
-    def add_layers(self, layers): # public.
+    def add_layers(self, layers):
         """
         Adds one or more layers to the network.
 
@@ -94,9 +94,9 @@ class MLPNetwork: # public.
                 self._add_layer(l)
             
             
-    def add_training_archiver(self, training_archiver): # public.
+    def add_training_archiver(self, training_archiver):
         self.training_archiver=training_archiver
-        training_archiver._set_target_network(self)
+        training_archiver.set_target_network(self)
         
     
     def initialize_parameters(self, weight_init_scheme="xavier", bias_init_scheme="zeros", 
@@ -146,12 +146,12 @@ class MLPNetwork: # public.
                                                          factor=factor,random_seed=random_seed)
         self.parameter_initializer.parent_network=self
 
-    def _is_initializer_added(self): # module-private.
+    def _is_initializer_added(self):
         if (self.parameter_initializer==None):
             return False
         else:
             return True
-    # public.
+
     def train(self, X, Y, num_iterations=10, batch_size=None, learning_rate=0.0000009, print_start_end=True,
               validation_X=None, validation_Y=None): 
         
@@ -193,9 +193,9 @@ class MLPNetwork: # public.
             
             # Compute the training cost, accuracy and precision (using the current training batch).
             
-            self.training_archiver._compute_and_archive_cost(cost_type="training")
-            self.training_archiver._compute_and_archive_accuracy(acc_type="training")
-            self.training_archiver._compute_and_archive_precision(precis_type="training")
+            self.training_archiver.compute_and_archive_cost(cost_type="training")
+            self.training_archiver.compute_and_archive_accuracy(acc_type="training")
+            self.training_archiver.compute_and_archive_precision(precis_type="training")
             
             # Compute the validation cost, accuracy and precision (using validation dataset).
             if (validation_Y is None) or (validation_X is None):
@@ -205,23 +205,23 @@ class MLPNetwork: # public.
                 self.Y_batch = validation_Y
                 
                 self._network_forward_prop()
-                self.training_archiver._compute_and_archive_cost(cost_type="validation")
-                self.training_archiver._compute_and_archive_accuracy(acc_type="validation")
-                self.training_archiver._compute_and_archive_precision(precis_type="validation")
+                self.training_archiver.compute_and_archive_cost(cost_type="validation")
+                self.training_archiver.compute_and_archive_accuracy(acc_type="validation")
+                self.training_archiver.compute_and_archive_precision(precis_type="validation")
             
             # rest of caching occurs here.
             
-            self.training_archiver._archive_gradients()
-            self.training_archiver._archive_parameters()
+            self.training_archiver.archive_gradients()
+            self.training_archiver.archive_parameters()
             
             # print archiving messages if any:
             if self.training_archiver.report: 
-                self.training_archiver._print_report()
-                self.training_archiver._clear_report()
+                self.training_archiver.print_report()
+                self.training_archiver.clear_report()
             
         if print_start_end: print("Training Complete!")
             
-    def evaluate(self, X, Y, metric="accuracy"): # public.
+    def evaluate(self, X, Y, metric="accuracy"):
         # assumes binary classification.
         
         _available_perfomance_metrics=["accuracy","precision"]
@@ -245,7 +245,7 @@ class MLPNetwork: # public.
             
         return score
         
-    def predict(self, X): #public.
+    def predict(self, X):
         self.input_layer._populate(X)
         self._network_forward_prop()
         return self.Y_pred
@@ -292,7 +292,6 @@ class MLPNetwork: # public.
         self.layers[0]=self.input_layer
         self._update_num_layers()
     
-    
     def _add_layer(self, layer): # class-private.
         """
         Adds one layer to the network. 
@@ -311,7 +310,7 @@ class MLPNetwork: # public.
         if layer.parent_network==None:
             self.layers[self.num_layers+1]=layer
             self._update_num_layers()
-            layer._incorporate_into_network(parent_network=self)
+            layer.incorporate_into_network(parent_network=self)
         else:
             raise ValueError("The layer has already been added to a network.")
 
@@ -325,22 +324,22 @@ class MLPNetwork: # public.
         None.
 
         """
-        self.parameter_initializer._execute_initialization_if_notdone()
+        self.parameter_initializer.execute_initialization_if_notdone()
             
         L = self.num_layers
     
         for l in range(1, L):
         # looping through all L-1 hidden layers.
-            self.layers[l]._layer_forward_prop()            
+            self.layers[l].layer_forward_prop()
                     
         else: # last layer.
-            self.layers[L]._layer_forward_prop()
+            self.layers[L].layer_forward_prop()
             
         self._update_Y_pred()
         
         return None    
     
-    def _compute_cost(self): # module-private.
+    def compute_cost(self): # module-private.
         """
         Computes cost using the cross-entropy cost function and assumes binary classification.
     
@@ -389,7 +388,7 @@ class MLPNetwork: # public.
             
         # Compute the Lth layer gradients.
         last_layer = self.layers[L]
-        last_layer._layer_back_prop()
+        last_layer.layer_back_prop()
         
         # ensure dJdB is a 2D numpy array and not 1D, even though it stored as a vector, 
         # and only broadcasted into a matrix during computations.
@@ -399,7 +398,7 @@ class MLPNetwork: # public.
         for l in reversed(range(1, L)):
             current_layer = self.layers[l]
             
-            current_layer._layer_back_prop()
+            current_layer.layer_back_prop()
                     
             # ensure dJdB is a 2D numpy array and not 1D.
             current_layer.gradients["dJdB"] = current_layer.gradients["dJdB"].reshape(-1,1)  
