@@ -1,12 +1,12 @@
-# deep_learning_without_ml_libraries
+# Deep Learning from Scratch without Machine Learning libraries 
 
-A deep learning module for a standard feedforward neural network designed straight from the mathematical formulations and without reliance on any machine learning libraries.
+A deep learning module for a standard feedforward neural network designed straight from the mathematical formulations and without reliance on any machine learning focused libraries.
 
 Some ML libraries were used for preprocessing of data in the demonstrations, but none were used for the multilayer perceptron.
 
 # Neural Network Overview
 
-This project includes an implementation of a multilayer perceptron (also known as the standard feedfoward nerual network).
+This project includes an implementation of a multilayer perceptron (also known as the standard feedfoward nerual network) and demonstrations using the network.
 
 <img src="readme_images/fully_connected_standard_feedforward_neural_network.png" style="width: 400px;"/>
 <center><i><b> A generalized depiction of a multilayer perceptron.</b></i></center>
