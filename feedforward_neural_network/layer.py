@@ -16,7 +16,7 @@ from . import _helper_funcs
 # and print warning to console if necessary.
 _helper_funcs.check_numpy_ver()
 
-class Layer: # public.
+class Layer:
     """
     Standard feedforward layer.
     
@@ -55,17 +55,17 @@ class Layer: # public.
         self.position_in_network=None
         self.preceding_layer=None
 
-    def layer_forward_prop(self): # module-private.
+    def _layer_forward_prop(self):
         """
         Performs the forward propagation for a layer.
         """        
         self._compute_linear_preactivation()
         
-        self.A=self.activation_type.forward_pass(self.Z)
+        self.A=self.activation_type._forward_pass(self.Z)
         
         return None 
         
-    def incorporate_into_network(self, parent_network): # module-private.
+    def _incorporate_into_network(self, parent_network):
             
         self.parent_network=parent_network
 
@@ -74,7 +74,7 @@ class Layer: # public.
         
         self.preceding_layer=self.parent_network.layers[self.position_in_network - 1]
         
-    def _compute_cost_gradients(self): # class-private.
+    def _compute_cost_gradients(self):
         """
         Computes dJ/dW and dJ/dB of the layer and dJ/dA of the preceding layer.
         """
@@ -89,14 +89,14 @@ class Layer: # public.
         
         return None
     
-    def layer_back_prop(self): # module-private.
+    def _layer_back_prop(self):
         """
         Peforms backward propagation for a layer.
         """
         Z = self.Z
         A = self.A
         
-        self.gradients["dAdZ"]=self.activation_type.backward_pass(A, Z)
+        self.gradients["dAdZ"]=self.activation_type._backward_pass(A, Z)
 
         self.gradients["dJdZ"] =self.gradients["dJdA"] * self.gradients["dAdZ"]
         
@@ -134,7 +134,7 @@ class _ActivationFunction:
         else:
             raise ValueError
         
-    def forward_pass(self, Z): # module-private.
+    def _forward_pass(self, Z):
         if self.name=="logistic":
             A = self._logistic(Z)
         if self.name=="relu":
@@ -145,7 +145,7 @@ class _ActivationFunction:
             A = self._linear(Z)
         return A
     
-    def backward_pass(self, A, Z): # module-private.
+    def _backward_pass(self, A, Z):
         if self.name=="logistic":
             dAdZ=self._logistic_gradient(A)
         if self.name=="relu":

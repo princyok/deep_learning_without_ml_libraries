@@ -23,7 +23,7 @@ from . import _helper_funcs
 # and print warning to console if necessary.
 _helper_funcs.check_numpy_ver()
 
-class MLPNetwork: # public.
+class MLPNetwork:
     """
     Standard feedforward neural network (a.k.a. multilayer percetron).
     
@@ -310,7 +310,7 @@ class MLPNetwork: # public.
         if layer.parent_network==None:
             self.layers[self.num_layers+1]=layer
             self._update_num_layers()
-            layer.incorporate_into_network(parent_network=self)
+            layer._incorporate_into_network(parent_network=self)
         else:
             raise ValueError("The layer has already been added to a network.")
 
@@ -330,16 +330,16 @@ class MLPNetwork: # public.
     
         for l in range(1, L):
         # looping through all L-1 hidden layers.
-            self.layers[l].layer_forward_prop()
+            self.layers[l]._layer_forward_prop()
                     
         else: # last layer.
-            self.layers[L].layer_forward_prop()
+            self.layers[L]._layer_forward_prop()
             
         self._update_Y_pred()
         
         return None    
     
-    def compute_cost(self): # module-private.
+    def _compute_cost(self):
         """
         Computes cost using the cross-entropy cost function and assumes binary classification.
     
@@ -360,7 +360,7 @@ class MLPNetwork: # public.
             
         return None
     
-    def _compute_last_layer_dJdA(self): # class-private.
+    def _compute_last_layer_dJdA(self):
         """
         Compute dJ/dA for the last layer. This assumes a cross-entropy cost function.
         """
@@ -372,7 +372,7 @@ class MLPNetwork: # public.
                                     ((1 - self.Y_batch) / (1 - A_last)))
         return None
 
-    def _network_back_prop(self): # class-private.
+    def _network_back_prop(self):
         """
         Performs backward propagation for the network.
         
@@ -388,7 +388,7 @@ class MLPNetwork: # public.
             
         # Compute the Lth layer gradients.
         last_layer = self.layers[L]
-        last_layer.layer_back_prop()
+        last_layer._layer_back_prop()
         
         # ensure dJdB is a 2D numpy array and not 1D, even though it stored as a vector, 
         # and only broadcasted into a matrix during computations.
@@ -398,14 +398,14 @@ class MLPNetwork: # public.
         for l in reversed(range(1, L)):
             current_layer = self.layers[l]
             
-            current_layer.layer_back_prop()
+            current_layer._layer_back_prop()
                     
             # ensure dJdB is a 2D numpy array and not 1D.
             current_layer.gradients["dJdB"] = current_layer.gradients["dJdB"].reshape(-1,1)  
     
         return None
     
-    def _update_parameters_gradient_descent(self, learning_rate): # class-private.
+    def _update_parameters_gradient_descent(self, learning_rate):
         """
         Update parameters of the network using standard gradient descent.        
 
@@ -428,7 +428,7 @@ class MLPNetwork: # public.
         
         return None
     
-    def _compute_accuracy(self): # module-private.
+    def _compute_accuracy(self):
         Y_true=self.Y_batch.reshape(-1,)
         Y_pred=self.Y_pred.reshape(-1,)
         
@@ -437,7 +437,7 @@ class MLPNetwork: # public.
         
         return None
     
-    def _compute_precision(self): # module-private.
+    def _compute_precision(self):
         Y_true=self.Y_batch.reshape(-1,)
         Y_pred=self.Y_pred.reshape(-1,)
         

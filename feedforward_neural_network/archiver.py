@@ -164,12 +164,12 @@ class TrainingArchiver:
         if (self.archiving_frequencies["cost"]!=0) and (i % self.archiving_frequencies["cost"] == 0):
             
             if cost_type=="training":
-                self.target_network.compute_cost()
+                self.target_network._compute_cost()
                 self.all_training_costs[i] = self.target_network.cost
                 self._update_report(archival_target="cost", prefix="training")
                 
             if cost_type=="validation":
-                self.target_network.compute_cost()
+                self.target_network._compute_cost()
                 self.all_validation_costs[i] = self.target_network.cost
                 
                 self._update_report(archival_target="cost", prefix="validation")

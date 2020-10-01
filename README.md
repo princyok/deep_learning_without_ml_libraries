@@ -22,7 +22,7 @@ The multilayer perceptron was used to tackle multiple datasets.
 ### Chest X-Ray Pneumonia Image Dataset
 This is a dataset containing 4273 chest x-ray images of children suffering from pneumonia (both bacterial and viral) and 1592 chest x-ray images of those not suffering from the lung infection.
 
-The neural network model learned to reach a 92% accuracy in predicting whether a patient has pneumonia or not, based on their chest x-ray image. This is despite being less suited for image learning when compared to convolutional neural networks.
+The fully connected neural network model learned to reach a **92% accuracy** in predicting whether a patient has pneumonia or not, based on their chest x-ray image. This is despite being less suited for image learning when compared to convolutional neural networks.
 The original paper (also source of the dataset) achieved 93%.
 
 The demonstration can be found [here](https://github.com/princyok/deep_learning_without_ml_libraries/tree/master/neural_network_demonstration) (deep_learning_without_ml_libraries -> neural_network_demonstration).
@@ -31,7 +31,7 @@ The demonstration can be found [here](https://github.com/princyok/deep_learning_
 
 The US adult income dataset contains data on 48842 individuals, and includes fields containing data on their age, education, sex, income level (classed into 2 categories: over 50k or under 50k), etc.
 
-A neural network was trained to reach a 78% accuracy in predicting whether an individual makes over 50k a year or not, based on just data from other fields.
+A fully connected neural network was trained to reach a **78% accuracy** in predicting whether an individual makes over 50k a year or not, based on just data from other fields.
 
 The demonstration can be found [here](https://github.com/princyok/deep_learning_without_ml_libraries/tree/master/neural_network_demonstration) (deep_learning_without_ml_libraries -> neural_network_demonstration).
 
